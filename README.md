@@ -25,7 +25,7 @@ The script requires IAM permissions which can be configured using either aws con
 * ec2:DescribeAddresses
 * ec2:DescribeInstances
 * ec2:DescribeRegions
-* ec2:DescribeSecurityGroup
+* ec2:DescribeSecurityGroups
 * elasticache:DescribeCacheClusters
 * elasticloadbalancing:DescribeLoadBalancers
 * elasticmapreduce:ListClusters
