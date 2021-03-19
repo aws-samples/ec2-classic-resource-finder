@@ -34,6 +34,7 @@ unset opsstack
 unset opsip
 unset opselb
 unset opsec2
+unset classicstatus
 
 ## Check to make sure AWS CLI is installed
 AWSCURRENTVERSION=`aws --version 2>&1`  ## Get the version of the AWS CLI installed. If the AWS CLI is not installed the error pipes to dev null
@@ -48,6 +49,15 @@ fi
 for region in `aws ec2 describe-regions --query 'Regions[*].RegionName' --output text --region us-east-1 | awk 'BEGIN { OFS = "\n" } { $1=$1; print }'` ## Use the EC2 CLI to get all region and loop through them
 do
     printf "# -------------------------------------------------------------------------\nSearching for resources in EC2-Classic in $region\n# -------------------------------------------------------------------------\n\n"
+
+    ## Get Enablement Status
+    printf "Determining if EC2-Classic is enabled..."
+    classicstatus=`aws ec2 describe-account-attributes --attribute-names supported-platforms --query 'AccountAttributes[*].AttributeValues[*].AttributeValue' --region $region --output text 2> /dev/null | grep EC2` ## Get supported platforms for the region.
+    if [[ ${#classicstatus} -gt 2 ]]
+        then printf "$region, Enabled\n" >> Classic_Platform_Status.csv ## If supported platforms includes EC2 in addition to VPC, output the region and Enabled to a CSV
+        else printf "$region, Disabled\n" >> Classic_Platform_Status.csv ## If supported platforms is only VPC and does not include EC2, output the region and Disabled to a CSV
+    fi
+    printf "Done \xE2\x9C\x94 \n"
 
     ## Search for EIPs
     printf "Searching for EIPs in EC2-Classic..."
@@ -141,4 +151,7 @@ do
     printf "\n# -------------------------------------------------------------------------\nSearch for resources in $region is complete\n# -------------------------------------------------------------------------\n\n\n\n"
 done
 
-printf "Search for EC2-Classic Resources is complete! Please check for the CSVs output to this directory. If no resources were found in EC2-Classic for a service, there was no CSV created. As a final step once you have verified you have no other EC2-Classic resources, please open a support case and request your account be converted to VPC-Only as outlined in this document: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/vpc-migrate.html\n\n"
+printf "Search for EC2-Classic Resources is complete! Please check for the CSVs output to this directory."
+printf "If no resources were found in EC2-Classic for a service, there was no CSV created."
+printf "As a final step once you have verified you have no other EC2-Classic resources, "
+printf "please open a support case and request your account be converted to VPC-Only as outlined in this document: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/vpc-migrate.html \n\n"
