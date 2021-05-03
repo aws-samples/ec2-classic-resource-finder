@@ -73,8 +73,8 @@ do
     while [[ ${#ec2next} -gt 10 ]] && [[ $ec2loopcounter -lt 100 ]] ## While the next token is not empty or "null" and the loopcounter is less than 100 
         do
         if [[ $ec2next == "placeholder" ]] ## If token is still the placeholder, dont pass a starting-token else pass the starting token
-            then ec2raw=`aws ec2 describe-instances --region $region --query '{NextToken:NextToken,Reservations:Reservations[*].Instances[?VpcId==\`null\`]}' --output json 2> /dev/null` ## Get the NextToken and InstanceID in JSON and store it in a variable
-            else ec2raw=`aws ec2 describe-instances --region $region --query '{NextToken:NextToken,Reservations:Reservations[*].Instances[?VpcId==\`null\`]}' --starting-token $ec2next --output json 2> /dev/null` ## Get the NextToken and InstanceID in in JSON starting at the current token value and store it in a variable
+            then ec2raw=`aws ec2 describe-instances --region $region --filter Name=instance-state-name,Values=pending,running,shutting-down,stopping,stopped --query '{NextToken:NextToken,Reservations:Reservations[*].Instances[?VpcId==\`null\`]}' --output json 2> /dev/null` ## Get the NextToken and InstanceID in JSON and store it in a variable
+            else ec2raw=`aws ec2 describe-instances --region $region --filter Name=instance-state-name,Values=pending,running,shutting-down,stopping,stopped --query '{NextToken:NextToken,Reservations:Reservations[*].Instances[?VpcId==\`null\`]}' --starting-token $ec2next --output json 2> /dev/null` ## Get the NextToken and InstanceID in in JSON starting at the current token value and store it in a variable
         fi
         ec2next=`jq -r '.NextToken' <<< $ec2raw 2> /dev/null` ## Use JQ to parse the NextToken and store it in a variable
         jq -r --arg region ",$region" '.Reservations[] | .[] .InstanceId + $region' <<< $ec2raw >> Classic_EC2_Instances.csv ## Parse the instance IDs, append the region to each line delimited by a comma and output to the CSV
