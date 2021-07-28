@@ -1,7 +1,7 @@
 # EC2 Classic Resource Finder
-We launched Amazon VPC on 5-Sep-2009 as an enhancement over EC2-Classic and while we maintained EC2-Classic in its current state for our existing customers, we continuously made improvements, and added cutting edge instances and networking features on Amazon VPC. In the spirit of offering best customer experience, we firmly believe that all our customers should migrate their resources from EC2-Classic to Amazon VPC. To help determine what resources may be running in EC2-Classic, this script will help identify resources running in EC2-Classsic in an ad-hoc, self-service manner. For more information on migrating to VPC, visit our [docs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/vpc-migrate.html).
+We launched Amazon VPC on 5-Sep-2009 as an enhancement over EC2-Classic and while we maintained EC2-Classic in its current state for our existing customers, we continuously made improvements, and added cutting edge instances and networking features on Amazon VPC. In the spirit of offering best customer experience, we firmly believe that all our customers should migrate their resources from EC2-Classic to Amazon VPC. To help determine what resources may be running in EC2-Classic, this script will help identify resources running in EC2-Classic in an ad-hoc, self-service manner. For more information on migrating to VPC, visit our [docs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/vpc-migrate.html).
  
-This script helps idenitfy all resources provisioned in EC2-Classic across all regions in an account as well as each region's enablement status for EC2-Classic. Depending on the number of resources you are running and the number of regions you are in, this script may take longer to run in order to describe and evaluate all resources. 
+This script helps identify all resources provisioned in EC2-Classic across all regions in an account as well as each region's enablement status for EC2-Classic. Depending on the number of resources you are running and the number of regions you are in, this script may take longer to run in order to describe and evaluate all resources. 
  
  
  
@@ -113,7 +113,7 @@ Included in this repository is [multi-account-wrapper.sh](multi-account-wrapper.
 
 ## How to use Multi-Account-Wrapper
 
-Multi-account-wrapper is designed to assume a specified role in each account within an organization and run a bash script using the credentials from that assumed role. To run the multi-account-wrapper for Classic-Resourc-Finder.sh run the following command replacing the values in brackets with the appropriate value (Note: if ExternalId is required by the assumed role, please see the optional commandline switch below the following command.). A folder will be created for each account and any output will be created in the folder for each account. If MFA is required, the Multi-Account-Wrapper will not work.
+Multi-account-wrapper is designed to assume a specified role in each account within an organization and run a bash script using the credentials from that assumed role. To run the multi-account-wrapper for Classic-Resource-Finder.sh run the following command replacing the values in brackets with the appropriate value (Note: if ExternalId is required by the assumed role, please see the optional commandline switch below the following command.). A folder will be created for each account and any output will be created in the folder for each account. If MFA is required, the Multi-Account-Wrapper will not work.
 
 ```
 multi-account-wrapper.sh -r <ROLE NAME> -f "Classic-Resource-Finder.sh"
