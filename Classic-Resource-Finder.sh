@@ -211,7 +211,7 @@ do
         fi
         ebappnext=`jq -r '.NextToken' <<< $ebappraw 2> /dev/null` ## Use JQ to parse the NextToken and store it in a variable
         IFS=$'\n' ## Set our internal field seperator to newline so we ignore the space delimiter in the for loop
-        for ebenvapp in `jq -r '.Environments[] | .ApplicationName +" "+ .EnvironmentName' <<< $ebappraw 2> /dev/null` ## Loop over each application and environment pair
+        for ebenvapp in `jq -r '.Environments[]|select(.Status == "Ready") | .ApplicationName +" "+ .EnvironmentName' <<< $ebappraw 2> /dev/null` ## Loop over each application and environment pair
             do
             ebapp=`cut -d " " -f1 <<< $ebenvapp 2> /dev/null` ## Extract the Application name
             ebenv=`cut -d " " -f2 <<< $ebenvapp 2> /dev/null` ## Extract the Environment name
