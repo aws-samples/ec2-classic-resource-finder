@@ -1,4 +1,4 @@
-#
+#! /bin/bash
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
 #
@@ -23,35 +23,35 @@ unset awscurrentversion awsversionregex jqtest cuttest region classicstatus ec2n
     emrraw emrclust emrclustconfig emrsubnetid emrrequestedsubnetids
 
 ## Check to make sure AWS CLI is installed
-awscurrentversion=`aws --version 2>&1`  ## Get the version of the AWS CLI installed. If the AWS CLI is not installed the error pipes to dev null
+awscurrentversion=$(aws --version 2>&1)  ## Get the version of the AWS CLI installed. If the AWS CLI is not installed the error pipes to dev null
 awsversionregex="^(aws-cli\/)"  ## Set the regex we compare the AWS CLI version against to make sure a valid version of AWS CLI is installed
 if [[ ! $awscurrentversion =~ $awsversionregex ]]  ## If the AWS CLI version does not fit to the regex for a valid AWS CLI version
     then printf "AWS CLI does not appear to be installed, please install the AWS CLI and try running this again.\n" ## Then print an error
     exit 1 ## and exit the script with a non success (non-zero) error code
 fi
 
-jqtest=`jq -r '.test' <<< '{"test": "success"}' 2> /dev/null` ## Parse a simple JSON input to output "success", pipe all errors to dev null
+jqtest=$(jq -r '.test' <<< '{"test": "success"}' 2> /dev/null) ## Parse a simple JSON input to output "success", pipe all errors to dev null
 if [[ ! $jqtest == "success" ]] ## If the test did not result in the output of "success"
     then printf "JQ does not appear to be installed, please install JQ and try running this again.\n" ## Then print an error
     exit 1 ## and exit the script with a non success (non-zero) error code
 fi
 
-cuttest=`cut -d " " -f2 <<< "fail success" 2> /dev/null` ## Parse a simple input to output "success", pipe all errors to dev null
+cuttest=$(cut -d " " -f2 <<< "fail success" 2> /dev/null) ## Parse a simple input to output "success", pipe all errors to dev null
 if [[ ! $cuttest == "success" ]] ## If the test did not result in the output of "success"
     then printf "cut does not appear to be installed, please install cut and try this again.\n" ## Then print an error
     exit 1 ## and exit the script with a non success (non-zero) error code
 fi
 
 ## Search for EC2-Classic Resources
-for region in `aws ec2 describe-regions --output json --region us-east-1 | jq -r '.Regions[] .RegionName'` ## Use the EC2 CLI to get all region and loop through them
+for region in $(aws ec2 describe-regions --output json --region us-east-1 | jq -r '.Regions[] .RegionName') ## Use the EC2 CLI to get all region and loop through them
 do
     printf "# -------------------------------------------------------------------------\nSearching for resources in EC2-Classic in $region\n# -------------------------------------------------------------------------\n\n"
 
     ## Get Enablement Status
     printf "Determining if EC2-Classic is enabled..."
-    classicstatus=`aws ec2 describe-account-attributes --attribute-names supported-platforms --region $region --output json 2> /dev/null` ## Get supported platforms for the region.
+    classicstatus=$(aws ec2 describe-account-attributes --attribute-names supported-platforms --region $region --output json 2> /dev/null) ## Get supported platforms for the region.
     if [[ ${#classicstatus} -gt 2 ]] ## Make sure we got a return value
-        then classicstatusfiltered=`jq -r '.AccountAttributes[] .AttributeValues[] | select(.AttributeValue=="EC2") | .AttributeValue' <<< $classicstatus 2> /dev/null` ##Filter the input to determine if EC2 (classic) is supported
+        then classicstatusfiltered=$(jq -r '.AccountAttributes[] .AttributeValues[] | select(.AttributeValue=="EC2") | .AttributeValue' <<< $classicstatus 2> /dev/null) ##Filter the input to determine if EC2 (classic) is supported
             if [[ ${#classicstatusfiltered} -gt 2 ]]
                 then printf "$region, Enabled\n" >> Classic_Platform_Status.csv ## If supported platforms includes EC2 in addition to VPC, output the region and Enabled to a CSV
                 else printf "$region, Disabled\n" >> Classic_Platform_Status.csv ## If supported platforms is only VPC and does not include EC2, output the region and Disabled to a CSV
@@ -73,10 +73,10 @@ do
     while [[ ${#ec2next} -gt 10 ]] && [[ $ec2loopcounter -lt 100 ]] ## While the next token is not empty or "null" and the loopcounter is less than 100 
         do
         if [[ $ec2next == "placeholder" ]] ## If token is still the placeholder, dont pass a starting-token else pass the starting token
-            then ec2raw=`aws ec2 describe-instances --region $region --filter Name=instance-state-name,Values=pending,running,shutting-down,stopping,stopped --query '{NextToken:NextToken,Reservations:Reservations[*].Instances[?VpcId==\`null\`]}' --output json 2> /dev/null` ## Get the NextToken and InstanceID in JSON and store it in a variable
-            else ec2raw=`aws ec2 describe-instances --region $region --filter Name=instance-state-name,Values=pending,running,shutting-down,stopping,stopped --query '{NextToken:NextToken,Reservations:Reservations[*].Instances[?VpcId==\`null\`]}' --starting-token $ec2next --output json 2> /dev/null` ## Get the NextToken and InstanceID in in JSON starting at the current token value and store it in a variable
+            then ec2raw=$(aws ec2 describe-instances --region $region --filter Name=instance-state-name,Values=pending,running,shutting-down,stopping,stopped --query '{NextToken:NextToken,Reservations:Reservations[*].Instances[?VpcId==\`null\`]}' --output json 2> /dev/null) ## Get the NextToken and InstanceID in JSON and store it in a variable
+            else ec2raw=$(aws ec2 describe-instances --region $region --filter Name=instance-state-name,Values=pending,running,shutting-down,stopping,stopped --query '{NextToken:NextToken,Reservations:Reservations[*].Instances[?VpcId==\`null\`]}' --starting-token $ec2next --output json 2> /dev/null) ## Get the NextToken and InstanceID in in JSON starting at the current token value and store it in a variable
         fi
-        ec2next=`jq -r '.NextToken' <<< $ec2raw 2> /dev/null` ## Use JQ to parse the NextToken and store it in a variable
+        ec2next=$(jq -r '.NextToken' <<< $ec2raw 2> /dev/null) ## Use JQ to parse the NextToken and store it in a variable
         jq -r --arg region ",$region" '.Reservations[] | .[] .InstanceId + $region' <<< $ec2raw >> Classic_EC2_Instances.csv ## Parse the instance IDs, append the region to each line delimited by a comma and output to the CSV
         ec2loopcounter=$((ec2loopcounter + 1))
     done
@@ -90,10 +90,10 @@ do
     while [[ ${#sgnext} -gt 10 ]] && [[ $sgloopcounter -lt 100 ]] ## While the next token is not empty or "null" and the loopcounter is less than 100 
         do
         if [[ $sgnext == "placeholder" ]] ## If token is still the placeholder, dont pass a starting-token else pass the starting token
-            then sgraw=`aws ec2 describe-security-groups --query '{NextToken:NextToken,SecurityGroups:SecurityGroups[?VpcId==\`null\`].GroupId}' --region $region --output json 2> /dev/null` ## Get the NextToken and Security GroupID in JSON and store it in a variable
-            else sgraw=`aws ec2 describe-security-groups --query '{NextToken:NextToken,SecurityGroups:SecurityGroups[?VpcId==\`null\`].GroupId}' --region $region --output json --starting-token $sgnext 2> /dev/null` ## Get the NextToken and Security GroupID in in JSON starting at the current token value and store it in a variable
+            then sgraw=$(aws ec2 describe-security-groups --query '{NextToken:NextToken,SecurityGroups:SecurityGroups[?VpcId==\`null\`].GroupId}' --region $region --output json 2> /dev/null) ## Get the NextToken and Security GroupID in JSON and store it in a variable
+            else sgraw=$(aws ec2 describe-security-groups --query '{NextToken:NextToken,SecurityGroups:SecurityGroups[?VpcId==\`null\`].GroupId}' --region $region --output json --starting-token $sgnext 2> /dev/null) ## Get the NextToken and Security GroupID in in JSON starting at the current token value and store it in a variable
         fi
-        sgnext=`jq -r '.NextToken' <<< $sgraw 2> /dev/null` ## Use JQ to parse the NextToken and store it in a variable
+        sgnext=$(jq -r '.NextToken' <<< $sgraw 2> /dev/null) ## Use JQ to parse the NextToken and store it in a variable
         jq -r --arg region ",$region" '.SecurityGroups[] + $region' <<< $sgraw >> Classic_SGs.csv ## Parse the Security Group IDs, append the region to each line delimited by a comma and output to the CSV
         sgloopcounter=$((sgloopcounter + 1))
     done
@@ -112,10 +112,10 @@ do
     while [[ ${#asgnext} -gt 10 ]] && [[ $asgloopcounter -lt 100 ]] ## While the next token is not empty or "null" and the loopcounter is less than 100 
         do
         if [[ $asgnext == "placeholder" ]] ## If token is still the placeholder, dont pass a starting-token else pass the starting token
-            then asgraw=`aws autoscaling describe-auto-scaling-groups --query '{NextToken:NextToken,AutoScalingGroups:AutoScalingGroups[?VPCZoneIdentifier==\`\`]}' --region $region --output json 2> /dev/null` ## Get the NextToken and ASG ARN in JSON and store it in a variable
-            else asgraw=`aws autoscaling describe-auto-scaling-groups --query '{NextToken:NextToken,AutoScalingGroups:AutoScalingGroups[?VPCZoneIdentifier==\`\`]}' --region $region --output json --starting-token $asgnext 2> /dev/null` ## Get the NextToken and ASG ARN in in JSON starting at the current token value and store it in a variable
+            then asgraw=$(aws autoscaling describe-auto-scaling-groups --query '{NextToken:NextToken,AutoScalingGroups:AutoScalingGroups[?VPCZoneIdentifier==\`\`]}' --region $region --output json 2> /dev/null) ## Get the NextToken and ASG ARN in JSON and store it in a variable
+            else asgraw=$(aws autoscaling describe-auto-scaling-groups --query '{NextToken:NextToken,AutoScalingGroups:AutoScalingGroups[?VPCZoneIdentifier==\`\`]}' --region $region --output json --starting-token $asgnext 2> /dev/null) ## Get the NextToken and ASG ARN in in JSON starting at the current token value and store it in a variable
         fi
-        asgnext=`jq -r '.NextToken' <<< $asgraw 2> /dev/null` ## Use JQ to parse the NextToken and store it in a variable
+        asgnext=$(jq -r '.NextToken' <<< $asgraw 2> /dev/null) ## Use JQ to parse the NextToken and store it in a variable
         jq -r --arg region ",$region" '.AutoScalingGroups[] .AutoScalingGroupARN + $region' <<< $asgraw >> Classic_Auto_Scaling_Groups.csv ## Parse the ASG ARN, append the region to each line delimited by a comma and output to the CSV
         asgloopcounter=$((asgloopcounter + 1))
     done
@@ -129,10 +129,10 @@ do
     while [[ ${#clbnext} -gt 10 ]] && [[ $clbloopcounter -lt 100 ]] ## While the next token is not empty or "null" and the loopcounter is less than 100 
         do
         if [[ $clbnext == "placeholder" ]] ## If token is still the placeholder, dont pass a starting-token else pass the starting token
-            then clbraw=`aws elb describe-load-balancers --query '{NextMarker:NextMarker,LoadBalancerName:LoadBalancerDescriptions[?VPCId==\`null\`]}' --region $region --output json 2> /dev/null` ## Get the NextMarker and CLB Name in JSON and store it in a variable
-            else clbraw=`aws elb describe-load-balancers --query '{NextMarker:NextMarker,LoadBalancerName:LoadBalancerDescriptions[?VPCId==\`null\`]}' --region $region --starting-token $clbnext --output json 2> /dev/null` ## Get the NextMarker and CLB Name in in JSON starting at the current token value and store it in a variable
+            then clbraw=$(aws elb describe-load-balancers --query '{NextMarker:NextMarker,LoadBalancerName:LoadBalancerDescriptions[?VPCId==\`null\`]}' --region $region --output json 2> /dev/null) ## Get the NextMarker and CLB Name in JSON and store it in a variable
+            else clbraw=$(aws elb describe-load-balancers --query '{NextMarker:NextMarker,LoadBalancerName:LoadBalancerDescriptions[?VPCId==\`null\`]}' --region $region --starting-token $clbnext --output json 2> /dev/null) ## Get the NextMarker and CLB Name in in JSON starting at the current token value and store it in a variable
         fi
-        clbnext=`jq -r '.NextMarker' <<< $clbraw 2> /dev/null` ## Use JQ to parse the NextMarker and store it in a variable
+        clbnext=$(jq -r '.NextMarker' <<< $clbraw 2> /dev/null) ## Use JQ to parse the NextMarker and store it in a variable
         jq -r --arg region ",$region" '.LoadBalancerName[] .LoadBalancerName + $region' <<< $clbraw 2> /dev/null >> Classic_CLBs.csv ## Parse the CLB Name, append the region to each line delimited by a comma and output to the CSV
         clbloopcounter=$((clbloopcounter + 1))
     done
@@ -146,14 +146,14 @@ do
     while [[ ${#rdsnext} -gt 10 ]] && [[ $rdsloopcounter -lt 100 ]] ## While the next token is not empty or "null" and the loopcounter is less than 100 
         do
         if [[ $rdsnext == "placeholder" ]] ## If token is still the placeholder, dont pass a starting-token else pass the starting token
-            then rdsraw=`aws rds describe-db-instances --query '{NextToken:NextToken,DBInstanceArn:DBInstances[*].DBInstanceArn}' --region $region --output json 2> /dev/null` ## Get the NextToken and DB ARN in JSON and store it in a variable
-            else rdsraw=`aws rds describe-db-instances --query '{NextToken:NextToken,DBInstanceArn:DBInstances[*].DBInstanceArn}' --region $region --starting-token $rdsnext --output json 2> /dev/null` ## Get the NextToken and DB ARN in in JSON starting at the current token value and store it in a variable
+            then rdsraw=$(aws rds describe-db-instances --query '{NextToken:NextToken,DBInstanceArn:DBInstances[*].DBInstanceArn}' --region $region --output json 2> /dev/null) ## Get the NextToken and DB ARN in JSON and store it in a variable
+            else rdsraw=$(aws rds describe-db-instances --query '{NextToken:NextToken,DBInstanceArn:DBInstances[*].DBInstanceArn}' --region $region --starting-token $rdsnext --output json 2> /dev/null) ## Get the NextToken and DB ARN in in JSON starting at the current token value and store it in a variable
         fi
        
-        rdsnext=`jq -r '.NextToken' <<< $rdsraw 2> /dev/null` ## Use JQ to parse the NextToken and store it in a variable
-        for dbinstance in `jq -r '.DBInstanceArn[]' <<< $rdsraw 2> /dev/null` ## Loop through all DB Instances
+        rdsnext=$(jq -r '.NextToken' <<< $rdsraw 2> /dev/null) ## Use JQ to parse the NextToken and store it in a variable
+        for dbinstance in $(jq -r '.DBInstanceArn[]' <<< $rdsraw 2> /dev/null) ## Loop through all DB Instances
         do 
-            instancesg=`aws rds describe-db-instances --filters Name=db-instance-id,Values=$dbinstance --query 'DBInstances[*].VpcSecurityGroups[*].VpcSecurityGroupId' --region $region --output text 2> /dev/null` ## Get the VPC Security Group ID[s] attached. If it is classic, this will be empty.
+            instancesg=$(aws rds describe-db-instances --filters Name=db-instance-id,Values=$dbinstance --query 'DBInstances[*].VpcSecurityGroups[*].VpcSecurityGroupId' --region $region --output text 2> /dev/null) ## Get the VPC Security Group ID[s] attached. If it is classic, this will be empty.
             if [[ ${#instancesg} -lt 5 ]] ## If the return is empty, thus classic then:
                 then printf "$dbinstance, $region \n" >> Classic_RDS_Instances.csv ## Print the DB Instance ARN and Region and output it to a CSV
             fi
@@ -172,10 +172,10 @@ do
     while [[ ${#ecachenext} -gt 10 ]] && [[ $ecacheloopcounter -lt 100 ]] ## While the next token is not empty or "null" and the loopcounter is less than 100 
         do
         if [[ $ecachenext == "placeholder" ]] ## If token is still the placeholder, dont pass a starting-token else pass the starting token
-            then ecacheraw=`aws elasticache describe-cache-clusters --query '{NextToken:NextToken,ARN:CacheClusters[?CacheSubnetGroupName==\`null\`]}' --region $region --output json 2> /dev/null` ## Get the NextToken and Cluster ARN in JSON and store it in a variable
-            else ecacheraw=`aws elasticache describe-cache-clusters --query '{NextToken:NextToken,ARN:CacheClusters[?CacheSubnetGroupName==\`null\`]}' --region $region --starting-token $ecachenext --output json 2> /dev/null` ## Get the NextToken and Cluster ARN in in JSON starting at the current token value and store it in a variable
+            then ecacheraw=$(aws elasticache describe-cache-clusters --query '{NextToken:NextToken,ARN:CacheClusters[?CacheSubnetGroupName==\`null\`]}' --region $region --output json 2> /dev/null) ## Get the NextToken and Cluster ARN in JSON and store it in a variable
+            else ecacheraw=$(aws elasticache describe-cache-clusters --query '{NextToken:NextToken,ARN:CacheClusters[?CacheSubnetGroupName==\`null\`]}' --region $region --starting-token $ecachenext --output json 2> /dev/null) ## Get the NextToken and Cluster ARN in in JSON starting at the current token value and store it in a variable
         fi
-        ecachenext=`jq -r '.NextToken' <<< $ecacheraw 2> /dev/null` ## Use JQ to parse the NextToken and store it in a variable
+        ecachenext=$(jq -r '.NextToken' <<< $ecacheraw 2> /dev/null) ## Use JQ to parse the NextToken and store it in a variable
         jq -r --arg region ",$region" '.ARN[] .ARN + $region' <<< $ecacheraw 2> /dev/null >> Classic_ElastiCache_Clusters.csv ## Parse the Cluster ARN, append the region to each line delimited by a comma and output to the CSV
         ecacheloopcounter=$((ecacheloopcounter + 1))
     done
@@ -189,10 +189,10 @@ do
     while [[ ${#redshiftnext} -gt 10 ]] && [[ $redshiftloopcounter -lt 100 ]] ## While the next token is not empty or "null" and the loopcounter is less than 100 
         do
         if [[ $redshiftnext == "placeholder" ]] ## If token is still the placeholder, dont pass a starting-token else pass the starting token
-            then redshiftraw=`aws redshift describe-clusters --query '{NextToken:NextToken,ClusterIdentifier:Clusters[?VpcId==\`null\`]}' --region $region --output json 2> /dev/null` ## Get the NextToken and Cluster Identifier in JSON and store it in a variable
-            else redshiftraw=`aws redshift describe-clusters --query '{NextToken:NextToken,ClusterIdentifier:Clusters[?VpcId==\`null\`]}' --region $region --starting-token $redshiftnext --output json 2> /dev/null` ## Get the NextToken and Cluster Identifier in in JSON starting at the current token value and store it in a variable
+            then redshiftraw=$(aws redshift describe-clusters --query '{NextToken:NextToken,ClusterIdentifier:Clusters[?VpcId==\`null\`]}' --region $region --output json 2> /dev/null) ## Get the NextToken and Cluster Identifier in JSON and store it in a variable
+            else redshiftraw=$(aws redshift describe-clusters --query '{NextToken:NextToken,ClusterIdentifier:Clusters[?VpcId==\`null\`]}' --region $region --starting-token $redshiftnext --output json 2> /dev/null) ## Get the NextToken and Cluster Identifier in in JSON starting at the current token value and store it in a variable
         fi
-        redshiftnext=`jq -r '.NextToken' <<< $redshiftraw 2> /dev/null` ## Use JQ to parse the NextToken and store it in a variable
+        redshiftnext=$(jq -r '.NextToken' <<< $redshiftraw 2> /dev/null) ## Use JQ to parse the NextToken and store it in a variable
         jq -r --arg region ",$region" '.ClusterIdentifier[] .ClusterIdentifier + $region' <<< $redshiftraw 2> /dev/null >> Classic_Redshift_Clusters.csv ## Parse the Cluster Identifier, append the region to each line delimited by a comma and output to the CSV
         redshiftloopcounter=$((redshiftloopcounter + 1))
     done
@@ -206,16 +206,16 @@ do
     while [[ ${#ebappnext} -gt 10 ]] && [[ $ebapploopcounter -lt 100 ]] ## While the next token is not empty or "null" and the loopcounter is less than 100 
         do
         if [[ $ebappnext == "placeholder" ]] ## If token is still the placeholder, dont pass a starting-token else pass the starting token
-            then ebappraw=`aws elasticbeanstalk describe-environments --query '{NextToken:NextToken,Environments:Environments[*]}' --region $region  --output json 2> /dev/null` ## Get the NextToken and environment values in JSON and store it in a variable
-            else ebappraw=`aws elasticbeanstalk describe-environments --query 'Environments[*]' --region $region  --output json --starting-token $ebappnext 2> /dev/null` ## Get the NextToken and environment values in in JSON starting at the current token value and store it in a variable
+            then ebappraw=$(aws elasticbeanstalk describe-environments --query '{NextToken:NextToken,Environments:Environments[*]}' --region $region  --output json 2> /dev/null) ## Get the NextToken and environment values in JSON and store it in a variable
+            else ebappraw=$(aws elasticbeanstalk describe-environments --query 'Environments[*]' --region $region  --output json --starting-token $ebappnext 2> /dev/null) ## Get the NextToken and environment values in in JSON starting at the current token value and store it in a variable
         fi
-        ebappnext=`jq -r '.NextToken' <<< $ebappraw 2> /dev/null` ## Use JQ to parse the NextToken and store it in a variable
+        ebappnext=$(jq -r '.NextToken' <<< $ebappraw 2> /dev/null) ## Use JQ to parse the NextToken and store it in a variable
         IFS=$'\n' ## Set our internal field seperator to newline so we ignore the space delimiter in the for loop
-        for ebenvapp in `jq -r '.Environments[] | .ApplicationName +" "+ .EnvironmentName' <<< $ebappraw 2> /dev/null` ## Loop over each application and environment pair
+        for ebenvapp in $(jq -r '.Environments[] | .ApplicationName +" "+ .EnvironmentName' <<< $ebappraw 2> /dev/null) ## Loop over each application and environment pair
             do
-            ebapp=`cut -d " " -f1 <<< $ebenvapp 2> /dev/null` ## Extract the Application name
-            ebenv=`cut -d " " -f2 <<< $ebenvapp 2> /dev/null` ## Extract the Environment name
-            ebnsval=`aws elasticbeanstalk describe-configuration-settings --application-name $ebapp --environment-name $ebenv --query 'ConfigurationSettings[*].OptionSettings[?Namespace==\`aws:ec2:vpc\`&&OptionName==\`VPCId\`&&Value!=\`null\`].OptionName' --region $region --output text 2> /dev/null` ## If the environment is configured for a vpc return "VPCId"
+            ebapp=$(cut -d " " -f1 <<< $ebenvapp 2> /dev/null) ## Extract the Application name
+            ebenv=$(cut -d " " -f2 <<< $ebenvapp 2> /dev/null) ## Extract the Environment name
+            ebnsval=$(aws elasticbeanstalk describe-configuration-settings --application-name $ebapp --environment-name $ebenv --query 'ConfigurationSettings[*].OptionSettings[?Namespace==\`aws:ec2:vpc\`&&OptionName==\`VPCId\`&&Value!=\`null\`].OptionName' --region $region --output text 2> /dev/null) ## If the environment is configured for a vpc return "VPCId"
             ebnsvalregex="VPCId"
             if [[ ! $ebnsval == $ebnsvalregex ]] ## If the configuration does not have a VPC:
                 then printf "$ebapp, $ebenv, $region\n" >> Classic_ElasticBeanstalk_Applications_Environments.csv ## Return the Application Name, Environment Name and Region for EB that doesnt have a VPC
@@ -238,13 +238,13 @@ do
     while [[ ${#dpnext} -gt 10 ]] && [[ $dploopcounter -lt 100 ]] ## While the next token is not empty or "null" and the loopcounter is less than 100 
         do
         if [[ $dpnext == "placeholder" ]] ## If token is still the placeholder, dont pass a starting-token else pass the starting token
-            then dpraw=`aws datapipeline list-pipelines --query '{NextToken:NextToken,id:pipelineIdList[*]}' --region $region --output json 2> /dev/null` ## Get the NextToken and Pipeline ID in JSON and store it in a variable
-            else dpraw=`aws datapipeline list-pipelines --query '{NextToken:NextToken,id:pipelineIdList[*]}' --region $region --starting-token $dpnext --output json 2> /dev/null` ## Get the NextToken and Pipeline ID in in JSON starting at the current token value and store it in a variable
+            then dpraw=$(aws datapipeline list-pipelines --query '{NextToken:NextToken,id:pipelineIdList[*]}' --region $region --output json 2> /dev/null) ## Get the NextToken and Pipeline ID in JSON and store it in a variable
+            else dpraw=$(aws datapipeline list-pipelines --query '{NextToken:NextToken,id:pipelineIdList[*]}' --region $region --starting-token $dpnext --output json 2> /dev/null) ## Get the NextToken and Pipeline ID in in JSON starting at the current token value and store it in a variable
         fi
-        dpnext=`jq -r '.NextToken' <<< $dpraw 2> /dev/null` ## Use JQ to parse the NextToken and store it in a variable
-        for pipeline in `jq -r '.id[] .id' <<< $dpraw 2> /dev/null` ## Parse the Cluster Identifier, append the region to each line delimited by a comma and output to the CSV
+        dpnext=$(jq -r '.NextToken' <<< $dpraw 2> /dev/null) ## Use JQ to parse the NextToken and store it in a variable
+        for pipeline in $(jq -r '.id[] .id' <<< $dpraw 2> /dev/null) ## Parse the Cluster Identifier, append the region to each line delimited by a comma and output to the CSV
         do
-            dpdefinition=`aws datapipeline get-pipeline-definition --pipeline-id $pipeline --query 'objects[?type==\`Ec2Resource\`&&subnetId==\`null\`].type' --region $region --output text 2> /dev/null` ## Return "Ec2Resource" only if the ec2 resource subnet ID is null
+            dpdefinition=$(aws datapipeline get-pipeline-definition --pipeline-id $pipeline --query 'objects[?type==\`Ec2Resource\`&&subnetId==\`null\`].type' --region $region --output text 2> /dev/null) ## Return "Ec2Resource" only if the ec2 resource subnet ID is null
             dpdefinitionregex="Ec2Resource"
             if [[ $dpdefinition == $dpdefinitionregex ]]
                 then printf "$pipeline, $region\n" >> Classic_DataPipelines.csv ## Return the Pipeline ID and region and output it to a CSV
@@ -266,15 +266,15 @@ do
     while [[ ${#emrnext} -gt 10 ]] && [[ $emrloopcounter -lt 100 ]] ## While the next token is not empty or "null" and the loopcounter is less than 100 
         do
         if [[ $emrnext == "placeholder" ]] ## If token is still the placeholder, dont pass a starting-token else pass the starting token
-            then emrraw=`aws emr list-clusters --active --query '{NextToken:NextToken,id:Clusters[*]}' --region $region --output json 2> /dev/null` ## Get the NextToken and cluster ID in JSON and store it in a variable
-            else emrraw=`aws emr list-clusters --active --query '{NextToken:NextToken,id:Clusters[*]}' --region $region --starting-token $emrnext --output json 2> /dev/null` ## Get the NextToken and cluster ID in in JSON starting at the current token value and store it in a variable
+            then emrraw=$(aws emr list-clusters --active --query '{NextToken:NextToken,id:Clusters[*]}' --region $region --output json 2> /dev/null) ## Get the NextToken and cluster ID in JSON and store it in a variable
+            else emrraw=$(aws emr list-clusters --active --query '{NextToken:NextToken,id:Clusters[*]}' --region $region --starting-token $emrnext --output json 2> /dev/null) ## Get the NextToken and cluster ID in in JSON starting at the current token value and store it in a variable
         fi
-        emrnext=`jq -r '.NextToken' <<< $emrraw 2> /dev/null` ## Use JQ to parse the NextToken and store it in a variable
-        for emrclust in `jq -r '.id[] .Id' <<< $emrraw 2> /dev/null` ## Parse the Cluster Identifier, append the region to each line delimited by a comma and output to the CSV
+        emrnext=$(jq -r '.NextToken' <<< $emrraw 2> /dev/null) ## Use JQ to parse the NextToken and store it in a variable
+        for emrclust in $(jq -r '.id[] .Id' <<< $emrraw 2> /dev/null) ## Parse the Cluster Identifier, append the region to each line delimited by a comma and output to the CSV
         do
-            emrclustconfig=`aws emr describe-cluster --cluster-id $emrclust --query 'Cluster.Ec2InstanceAttributes' --region $region --output json 2> /dev/null` ## Get "true" for clusters that don't have a VPC subnet configured and "false" for ones that do have a subnet configured
-            emrsubnetid=`jq -r '.Ec2SubnetId' <<< $emrclustconfig 2> /dev/null`
-            emrrequestedsubnetids=`jq -r '.RequestedEc2SubnetIds[]' <<< $emrclustconfig 2> /dev/null`
+            emrclustconfig=$(aws emr describe-cluster --cluster-id $emrclust --query 'Cluster.Ec2InstanceAttributes' --region $region --output json 2> /dev/null) ## Get "true" for clusters that don't have a VPC subnet configured and "false" for ones that do have a subnet configured
+            emrsubnetid=$(jq -r '.Ec2SubnetId' <<< $emrclustconfig 2> /dev/null)
+            emrrequestedsubnetids=$(jq -r '.RequestedEc2SubnetIds[]' <<< $emrclustconfig 2> /dev/null)
             if [[ ${#emrsubnetid} -lt 10 ]] && [[ ${#emrrequestedsubnetids} -lt 10 ]] ## If the cluster doesn't have a subnet configured then: 
                 then printf "$emrclust, $region\n" >> Classic_EMR_Clusters.csv ## Return the Cluster ID and region and output it to a CSV
             fi
