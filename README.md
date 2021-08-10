@@ -1,13 +1,16 @@
 # EC2 Classic Resource Finder
-We launched Amazon VPC on 5-Sep-2009 as an enhancement over EC2-Classic and while we maintained EC2-Classic in its current state for our existing customers, we continuously made improvements, and added cutting edge instances and networking features on Amazon VPC. In the spirit of offering best customer experience, we firmly believe that all our customers should migrate their resources from EC2-Classic to Amazon VPC. To help determine what resources may be running in EC2-Classic, this script will help identify resources running in EC2-Classsic in an ad-hoc, self-service manner. For more information on migrating to VPC, visit our [docs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/vpc-migrate.html).
+
+***EC2-Classic Networking is Retiring*** Find out how to prepare [here ](https://aws.amazon.com/blogs/aws/ec2-classic-is-retiring-heres-how-to-prepare/)
+
+We launched Amazon VPC on 5-Sep-2009 as an enhancement over EC2-Classic and while we maintained EC2-Classic in its current state for our existing customers, we continuously made improvements, added cutting edge instances, and networking features on Amazon VPC. In the spirit of offering the best customer experience, we firmly believe that all our customers should migrate their resources from EC2-Classic to Amazon VPC. To help determine what resources may be running in EC2-Classic, this script will help identify resources running in EC2-Classic in an ad-hoc, self-service manner. For more information on migrating to VPC, visit our [docs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/vpc-migrate.html).
  
-This script helps idenitfy all resources provisioned in EC2-Classic across all regions in an account as well as each region's enablement status for EC2-Classic. Depending on the number of resources you are running and the number of regions you are in, this script may take longer to run in order to describe and evaluate all resources. 
+This script helps identify all resources provisioned in EC2-Classic across all regions in an account as well as each region's enablement status for EC2-Classic. Depending on the number of resources you are running, and the number of regions you are in, this script may take longer to run in order to describe and evaluate all resources. If no resources were found, all CSVs will be empty except Classic_Platform_Status.csv which will show the current status in each region. Also, make sure to check the errors.txt for any errors that occurred during running the script. It is normal to see some errors related to `Could not connect to the endpoint URL` for DataPipeline and OpsWorks in some regions those services are not available in. Additionally, you may see `An error occurred (UnsupportedOperation) when calling the DescribeVpcClassicLink operation: The functionality you requested is not available in this region.` this is normal as well in certain regions. Other errors should be investigated to confirm any missing data.
  
  
  
 ## Requirements
  
-This script is designed to run in Bash and requires the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html), JQ, and the linux Cut utility. The CLI must either be already authenticated either via an IAM role, AWS SSO or an IAM access key with appropriate permissions as outlined below.
+This script is designed to run in Bash and requires the [AWS CLI] (https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html), JQ, and the linux Cut utility. The CLI must either be already authenticated either via an IAM role, AWS SSO or an IAM access key with appropriate permissions as outlined below.
  
 ### For Mac
  
@@ -24,7 +27,7 @@ This script is designed to run in Bash and requires the [AWS CLI](https://docs.a
  
 ## Outputs
  
-Currently this iterates through all EC2 regions and creates the following CSVs:
+Currently, this iterates through all EC2 regions and creates the following CSVs:
  
 | File Name                                              | Description                                                                     | Output                                     |
 | ------------------------------------------------------ | ------------------------------------------------------------------------------- | ------------------------------------------ |
@@ -42,6 +45,7 @@ Currently this iterates through all EC2 regions and creates the following CSVs:
 | Classic_DataPipelines.csv                              | DataPipelines configured to launch instances in EC2-Classic                     | Pipeline ID, Region                        |
 | Classic_EMR_Clusters.csv                               | EMR Clusters that may be configured to launch instances in EC2-Classic          | Cluster ID, Region                         |
 | Classic_OpsWorks_Stacks.csv                            | OpsWorks stacks that have resources configured for EC2-Classic                  | Stack ID, Region                           |
+| Error.txt                                              | This outputs any errors encountered when running the script.                    | print text of error outputs                |
  
  
  
@@ -72,7 +76,7 @@ The script requires IAM permissions which can be configured using either aws con
  
 ###ElasticBeanstalk Specific Permissions
  
-If you are utilizing ElasticBeanstalk, you will need the following additional permissions to identify environments and applications configured to launch resources in EC2-Classic. If you do not utilize ElasticBeanstalk, you can ignore the below permissions and the script will continue to run successfully for all other services and produce an empty CSB for ElasticBeanstalk.
+If you are utilizing ElasticBeanstalk, you will need the following additional permissions to identify environments and applications configured to launch resources in EC2-Classic. If you do not utilize ElasticBeanstalk, you can ignore the below permissions, and the script will continue to run successfully for all other services and produce an empty CSB for ElasticBeanstalk.
  
  
 * autoscaling:DescribeAutoScalingInstances
@@ -105,7 +109,7 @@ Included in this repository is [multi-account-wrapper.sh](multi-account-wrapper.
 
 * The IAM user which runs the script must have `organizations:ListAccounts` `sts:GetCallerIdentity` and `sts:AssumeRole` permissions
 * The IAM user which runs the script must be able to assume the role specified in each account in the organization (If STS AssumeRole fails, we simply skip running the input script against that account)
-* The role name for the role being called must exists in every AWS account within the organization and have the same name (If STS AssumeRole fails, we simply skip running the input script against that account)
+* The role name for the role being called must exist in every AWS account within the organization and have the same name (If STS AssumeRole fails, we simply skip running the input script against that account)
 * The role being called must have permissions to run all commands specified in the script. (For Classic-Resource-Finder see the permissions section above.)
 * If ExternalID is required, you must specify the value in the input for Multi-Account-Wrapper
 * The AWS CLI and JQ must be installed and configured as well as any other dependencies of the called script
@@ -113,7 +117,7 @@ Included in this repository is [multi-account-wrapper.sh](multi-account-wrapper.
 
 ## How to use Multi-Account-Wrapper
 
-Multi-account-wrapper is designed to assume a specified role in each account within an organization and run a bash script using the credentials from that assumed role. To run the multi-account-wrapper for Classic-Resourc-Finder.sh run the following command replacing the values in brackets with the appropriate value (Note: if ExternalId is required by the assumed role, please see the optional commandline switch below the following command.). A folder will be created for each account and any output will be created in the folder for each account. If MFA is required, the Multi-Account-Wrapper will not work.
+Multi-account-wrapper is designed to assume a specified role in each account within an organization and run a bash script using the credentials from that assumed role. To run the multi-account-wrapper for Classic-Resource-Finder.sh run the following command replacing the values in brackets with the appropriate value (Note: if ExternalId is required by the assumed role, please see the optional commandline switch below the following command.). A folder will be created for each account and any output will be created in the folder for each account. If MFA is required, the Multi-Account-Wrapper will not work.
 
 ```
 multi-account-wrapper.sh -r <ROLE NAME> -f "Classic-Resource-Finder.sh"

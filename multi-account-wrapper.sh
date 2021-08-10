@@ -1,3 +1,4 @@
+#!/bin/bash
 #
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
@@ -40,7 +41,7 @@ if [ ! -f "$FILETOEXEC" ] || [[ ${#FILETOEXEC} -lt 2 ]] ## Make sure the file na
 fi
 ROLESESSIONNAME=`aws sts get-caller-identity --output json 2> /dev/null| jq -r '.UserId' 2> /dev/null`  ##Get the current UserID to use in Role Session Name on STS-Assume Role
 ROLESESSIONNAMEREGEX="^[A-Za-z0-9\_\+\=\,\.\@\-]{2,64}$" ## Regex pattern for a properly formatted Role Session Name
-if [[ ! $ROLESESSIONNAME =~ $ROLESESSIONNAMEREGEX ]] ## If the Role session name does not fit the regex patterm
+if [[ ! $ROLESESSIONNAME =~ $ROLESESSIONNAMEREGEX ]] ## If the Role session name does not fit the regex pattern
     then printf "We failed to get the current UserID or it did not meet the requirements to use in Role Session Name in STS Assume Role.\n" ## Print an error
     exit 1 ## and exit with a non success (non-zero) exit code
 fi
