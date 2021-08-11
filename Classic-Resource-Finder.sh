@@ -44,7 +44,8 @@ if [[ ! $cuttest == "success" ]] ## If the test did not result in the output of 
 fi
 
 ## Search for EC2-Classic Resources
-for region in `aws ec2 describe-regions --output json --region us-east-1 | jq -r '.Regions[] .RegionName'` ## Use the EC2 CLI to get all regions and loop through them
+declare -a regions=('us-east-1' 'eu-west-1' 'us-west-1' 'ap-southeast-1' 'ap-northeast-1' 'us-west-2' 'sa-east-1' 'ap-southeast-2') ## Define regions that support EC2-Classic
+for region in "${regions[@]}" ## Loop through the regions that support EC2-Classic
 do
     printf "# -------------------------------------------------------------------------\nSearching for resources in EC2-Classic in $region\n# -------------------------------------------------------------------------\n\n"
 
