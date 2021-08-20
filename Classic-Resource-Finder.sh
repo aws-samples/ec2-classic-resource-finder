@@ -215,8 +215,8 @@ do
         IFS=$'\n' ## Set our internal field seperator to newline so we ignore the space delimiter in the for loop
         for ebenvapp in `jq -r '.Environments[] | .ApplicationName +" -:::- "+ .EnvironmentName' <<< $ebappraw 2>> errors.txt` ## Loop over each application and environment pair
             do
-            ebapp=`cut -d " -:::- " -f1 <<< $ebenvapp 2>> errors.txt` ## Extract the Application name
-            ebenv=`cut -d " -:::- " -f2 <<< $ebenvapp 2>> errors.txt` ## Extract the Environment name
+            ebapp=`awk -F" -:::- " '{print $1}' <<< $ebenvapp 2>> errors.txt` ## Extract the Application name
+            ebenv=`awk -F" -:::- " '{print $2}' <<< $ebenvapp 2>> errors.txt` ## Extract the Environment name
             ebnsval=`aws elasticbeanstalk describe-configuration-settings --application-name "$ebapp" --environment-name "$ebenv" --query 'ConfigurationSettings[*].OptionSettings[?Namespace==\`aws:ec2:vpc\`&&OptionName==\`VPCId\`&&Value!=\`null\`].OptionName' --region $region --output text 2>> errors.txt` ## If the environment is configured for a vpc return "VPCId"
             ebnsvalregex="VPCId"
             if [[ ! $ebnsval == $ebnsvalregex ]] ## If the configuration does not have a VPC:
