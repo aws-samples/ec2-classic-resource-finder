@@ -30,6 +30,11 @@ while getopts ":r:f:e:" opt; do
         ;;
     esac
 done
+
+full_path=$(realpath $0)
+dir_path=$(dirname $full_path)
+parent_path=$(realpath "${dir_path}/../")
+
 ROLENAMEREGEX="^[A-Za-z0-9\_\+\=\,\.\@\-]{1,64}$" ## Regex pattern to validate a role name
 if [[ ! $ROLENAME =~ $ROLENAMEREGEX ]] ## Validate RoleName input against the regex
     then printf "Please specify an accurate name of the IAM role to utilize in the input using -r.\n" ## If it doesnt match, print an error
@@ -45,6 +50,7 @@ if [[ ! $ROLESESSIONNAME =~ $ROLESESSIONNAMEREGEX ]] ## If the Role session name
     then printf "We failed to get the current UserID or it did not meet the requirements to use in Role Session Name in STS Assume Role.\n" ## Print an error
     exit 1 ## and exit with a non success (non-zero) exit code
 fi
+count=0
 for account in `aws organizations list-accounts --query 'Accounts[?Status==\`ACTIVE\`]' --region us-east-1 --output json 2> /dev/null | jq -r '.[] .Id' 2> /dev/null`  ## Get all active accounts in the organization
     do
     printf "\n# -------------------------------------------------------------------------\nRunning commands against account: $account\n# -------------------------------------------------------------------------\n"
@@ -56,31 +62,32 @@ for account in `aws organizations list-accounts --query 'Accounts[?Status==\`ACT
     unset ROLEARN
     if [[ ${#ASSUMMEDROLE} -gt 10 ]]
         then
+            count=$((count+1))
             ASSUMEDACCESSKEY=`jq -r '.Credentials .AccessKeyId' <<< $ASSUMMEDROLE 2> /dev/null` ##parse the Access Key
             ASSUMEDSECRETKEY=`jq -r '.Credentials .SecretAccessKey' <<< $ASSUMMEDROLE 2> /dev/null` ##parse the Secret Key
             ASSUMEDTOKEN=`jq -r '.Credentials .SessionToken' <<< $ASSUMMEDROLE 2> /dev/null` ##parse the session token
             unset ASSUMMEDROLE ## Unset the variable storing the full return from STS AssumeRole
             if [[ ${#ASSUMEDACCESSKEY} -gt 10 ]] && [[ ${#ASSUMEDSECRETKEY} -gt 10 ]] && [[ ${#ASSUMEDTOKEN} -gt 10 ]] ## Validate that we have a successfully parsed Access Key, Secret Key and Token
                 then
-                    accountdir="output"$account
+                    accountdir=$dir_path"/output"$account
                     if [ ! -d $accountdir ] ## If a directory for the current account doesn't exist:
                         then mkdir $accountdir ## Create a directory for the current account
                     fi
                     cd $accountdir ## Move into the directory for our current account
-                    export AWS_ACCESS_KEY_ID=$ASSUMEDACCESSKEY ## Set the environmental variable for the Access Key ID
-                    unset ASSUMEDACCESSKEY ## Unset the local variable for the Access Key
-                    export AWS_SECRET_ACCESS_KEY=$ASSUMEDSECRETKEY ## Set the environmental variable for the Secret Key
-                    unset ASSUMEDSECRETKEY ## Unset the local variable for the Secret Key
-                    export AWS_SESSION_TOKEN=$ASSUMEDTOKEN ## Set the environmental variable for the Session Token
-                    unset ASSUMEDTOKEN ## Unset the local variable for the Session Token
                     EXACTPATHREGEX="^\/"
                     if [[ $FILETOEXEC =~ $EXACTPATHREGEX ]] ## If the File to Exec input is an exact path (not relational) then:
-                        then bash $FILETOEXEC ## Run the script in its exact path syntax
-                        else bash ../$FILETOEXEC ## Move up a directory out of the directory we just created and run it from that context
+                        then bash $FILETOEXEC "$accountdir" "$ASSUMEDACCESSKEY" "$ASSUMEDSECRETKEY" "$ASSUMEDTOKEN"  & ## Run the script in its exact path syntax
+                        else bash ../$FILETOEXEC "$accountdir" "$ASSUMEDACCESSKEY" "$ASSUMEDSECRETKEY" "$ASSUMEDTOKEN" & ## Move up a directory out of the directory we just created and run it from that context
                     fi
+                    unset ASSUMEDACCESSKEY ASSUMEDTOKEN ASSUMEDSECRETKEY ## Unset the local variable for the Access Key
                     cd ../ ## Move back up 1 directory out of the directory for the account
                     printf "\n# -------------------------------------------------------------------------\nRunning commands against account: $account... Done \xe2\x9c\x85\n# -------------------------------------------------------------------------\n\n\n\n"
                 else printf "\n# -------------------------------------------------------------------------\nAssume role for account account $account Failed \xe2\x9d\x8c\n# -------------------------------------------------------------------------\n\n\n\n"
+            mod_count=$((count%10))
+            if [ $mod_count -eq 0 ]; then
+                echo "batch of 10"
+                sleep 10m
+            fi
             fi ## End of inner check for role values and execution
         else printf "\n# -------------------------------------------------------------------------\nAssume role for account account $account Failed \xe2\x9d\x8c\n# -------------------------------------------------------------------------\n\n\n\n"
     fi ## End of outer check for role values and execution
