@@ -17,6 +17,15 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
+# this is so it can be passed in an ran in more a siloed manner
+if [ $# -eq 4 ]; then
+    cd $1
+
+    export AWS_ACCESS_KEY_ID=$2
+    export AWS_SECRET_ACCESS_KEY=$3
+    export AWS_SESSION_TOKEN=$4
+fi
+
 ## Unset a bunch of variables we will use later
 unset awscurrentversion awsversionregex jqtest cuttest region classicstatus ec2next ec2loopcounter ec2raw sgnext sgloopcounter sgraw asgnext asgloopcounter \
     asgraw clbnext clbloopcounter clbraw rdsnext rdsloopcounter rdsraw ecachenext ecacheloopcounter ecacheraw redshiftnext redshiftloopcounter redshiftraw ebappnext \
