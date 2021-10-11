@@ -10,7 +10,7 @@ This script helps identify all resources provisioned in EC2-Classic across all r
  
 ## Requirements
  
-This script is designed to run in Bash and requires the [AWS CLI] (https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html), JQ, and the linux Cut utility. The CLI must either be already authenticated either via an IAM role, AWS SSO or an IAM access key with appropriate permissions as outlined below.
+This script is designed to run in Bash and requires the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html), JQ, and the linux Cut utility. The CLI must either be already authenticated either via an IAM role, AWS SSO or an IAM access key with appropriate permissions as outlined below.
  
 ### For Mac
  
