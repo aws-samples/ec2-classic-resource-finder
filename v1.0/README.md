@@ -1,25 +1,33 @@
 # EC2 Classic Resource Finder
 
-***EC2 Classic Resource Finder 2.0 is here. Read more below.***
-
 ***EC2-Classic Networking is Retiring*** Find out how to prepare [here ](https://aws.amazon.com/blogs/aws/ec2-classic-is-retiring-heres-how-to-prepare/)
 
 We launched Amazon VPC on 5-Sep-2009 as an enhancement over EC2-Classic and while we maintained EC2-Classic in its current state for our existing customers, we continuously made improvements, added cutting edge instances, and networking features on Amazon VPC. In the spirit of offering the best customer experience, we firmly believe that all our customers should migrate their resources from EC2-Classic to Amazon VPC. To help determine what resources may be running in EC2-Classic, this script will help identify resources running in EC2-Classic in an ad-hoc, self-service manner. For more information on migrating to VPC, visit our [docs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/vpc-migrate.html).
  
-Version 2.0 of this script is now available, named [py-Classic-Resource-Finder.py](py-Classic-Resource-Finder.py). This new iteration still loops through all regions where EC2-Classic is supported and determine if EC2-Classic is enabled and what, if any, resources are running or configured to run in EC2-Classic. The multi-account-wrapper is now built in and uses command line arguments to run. Additionally, use of multiple [AWS Credential profiles](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html#shared-credentials-file) is now supported. This will output to a set of CSVs in a folder created for each account it is run against. The script is now written in Python and uses Boto3. It runs using multiprocessing to improve runtimes. Please note, because this runs multiple processes simultaneously it may consume more CPU. It is suggested not to run this on the same instance, or computer that is running any critical workloads that may become deprived of computational resources while this is running. Additionally, this fixes an issue with the version 1 script where AWS ElasticBeanstalk Environments with a space in the name may render a false positive. Any errors rendered in the Error CSV should be investigated to determine if the output was still accurate.  
-
-Known issue: If you are running ElasticBeanstalk Environments in the Default VPC by not specifying a VPC, this may produce a false positive.
-  
+This script helps identify all resources provisioned in EC2-Classic across all regions which support EC2-Classic in an account, as well as each of those regions' enablement status for EC2-Classic. Depending on the number of resources you are running, and the number of regions you are in, this script may take longer to run in order to describe and evaluate all resources. If no resources were found, all CSVs will be empty except Classic_Platform_Status.csv which will show the current status in each region. Also, make sure to check the errors.txt for any errors that occurred during running the script. It is normal to see some errors related to `Could not connect to the endpoint URL` for DataPipeline in some regions in which the service is not available in. Other errors should be investigated to confirm any missing data.
+ 
+ 
+ 
 ## Requirements
  
-This script is designed to run using Python 3 and requires the [Boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html). Credentials must be pre-configured using the AWS CLI, or an instance IAM profile, if using Amazon EC2. You can read more about how to pre-authenticate [here](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html)
+This script is designed to run in Bash and requires the [AWS CLI] (https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html), JQ, and the linux Cut utility. The CLI must either be already authenticated either via an IAM role, AWS SSO or an IAM access key with appropriate permissions as outlined below.
  
-* To install the Boto3, follow the instructions [here](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html#installation)
-  
+### For Mac
+ 
+* To install the AWS CLI, follow the instructions [here](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-mac.html)
+* To install JQ, run `brew install jq`
+ 
+### For Amazon Linux 2
+ 
+* To install the AWS CLI, follow the instructions [here](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html). (Note: many Amazon Linux 2 AMIs already have CLI installed. You can verify it is installed by running `aws --version`)
+* To install JQ, run `yum -y install jq`
+ 
+ 
+ 
  
 ## Outputs
  
-Currently, this iterates through all EC2 regions which support EC2-Classic and creates the following CSVs prepended with the date and time in a folder for each account it is run against:
+Currently, this iterates through all EC2 regions and creates the following CSVs:
  
 | File Name                                              | Description                                                                     | Output                                     |
 | ------------------------------------------------------ | ------------------------------------------------------------------------------- | ------------------------------------------ |
@@ -65,7 +73,6 @@ The script requires IAM permissions which can be configured using either aws con
 * rds:DescribeDBInstances
 * redshift:DescribeClusters
 * opsworks:DescribeStacks
-* sts:GetCallerIdentity
  
 ###ElasticBeanstalk Specific Permissions
  
@@ -95,59 +102,31 @@ The following permissions to allow the identification of ElasticBeanstalk enviro
 * s3:GetBucketPolicy
 * s3:ListBucket
 
-###Multi-Account Permissions
+# Multi-Account-Wrapper
+Included in this repository is [multi-account-wrapper.sh](multi-account-wrapper.sh) which allows users needing to run the Classic-Resource-Finder against many accounts within an AWS Organization. Multi-account-wrapper has a few very specific requirements of its own, please make sure to read them carefully.
 
-* organizations:ListAccounts
-* sts:AssumeRole
+## Requirements 
 
-## Requirements for multi-account usage
-
-* The IAM user which runs the script must be able to assume the role specified in each account in the organization (If STS AssumeRole fails, we simply skip running the input script against that account and print an error to the standard output)
+* The IAM user which runs the script must have `organizations:ListAccounts` `sts:GetCallerIdentity` and `sts:AssumeRole` permissions
+* The IAM user which runs the script must be able to assume the role specified in each account in the organization (If STS AssumeRole fails, we simply skip running the input script against that account)
 * The role name for the role being called must exist in every AWS account within the organization and have the same name (If STS AssumeRole fails, we simply skip running the input script against that account)
-* The role being called must have permissions to run all commands specified in the script. (For py-Classic-Resource-Finder see the permissions section above.)
+* The role being called must have permissions to run all commands specified in the script. (For Classic-Resource-Finder see the permissions section above.)
 * If ExternalID is required, you must specify the value in the input for Multi-Account-Wrapper
+* The AWS CLI and JQ must be installed and configured as well as any other dependencies of the called script
+* The called script must be written and executable in BASH (This is already taken care of in Classic-Resource-Finder)
 
-## Command line arguments
+## How to use Multi-Account-Wrapper
 
-py-Classic-Resource-Finder.py can be called without any arguments and will be run against the account for the default configured credential. 
+Multi-account-wrapper is designed to assume a specified role in each account within an organization and run a bash script using the credentials from that assumed role. To run the multi-account-wrapper for Classic-Resource-Finder.sh run the following command replacing the values in brackets with the appropriate value (Note: if ExternalId is required by the assumed role, please see the optional commandline switch below the following command.). A folder will be created for each account and any output will be created in the folder for each account. If MFA is required, the Multi-Account-Wrapper will not work.
 
-### All Accounts in an Organization
+```
+multi-account-wrapper.sh -r <ROLE NAME> -f "Classic-Resource-Finder.sh"
+```
 
-####With an External ID:
-
-`python3 py-Classic-Resource-Finder.py -o -r <role name> -e <external ID>`
-
-or
-
-`python3 py-Classic-Resource-Finder.py --organization --rolename <role name> --externalid <external ID>`
-
-####Without an External ID:
-
-`python3 py-Classic-Resource-Finder.py -o -r <role name>`
-
-or
-
-`python3 py-Classic-Resource-Finder.py --organization --rolename <role name>`
-
-### Use Profile[s] in the Credential File
-
-####Single Profile
-
-`python3 py-Classic-Resource-Finder.py -p <profile name>`
-
-or
-
-`python3 py-Classic-Resource-Finder.py --profile <profile name>`
-
-####Multiple Profiles
-
-Use a comma delimited list of profile names. Do not put a space around the commas. 
-
-`python3 py-Classic-Resource-Finder.py -p <profile name 1>,<profile name 2>,<profile name 3>`
-
-or
-
-`python3 py-Classic-Resource-Finder.py --profile <profile name 1>,<profile name 2>,<profile name 3>`
+Command Line switches:
+* -r  <ROLE NAME> The name of the IAM Role to be assumed in each account within the Organization
+* -f  <BASH FILE TO EXECUTE> The relative or exact path of the BASH file to execute against each account in the Organization
+* -e  <EXTERNAL ID> The External ID to specify when calling AssumeRole
 
 ## Security
 
