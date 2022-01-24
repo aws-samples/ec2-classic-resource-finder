@@ -18,7 +18,6 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-
 import getopt
 import os
 import sys
@@ -425,7 +424,7 @@ def classicdatapipelines(dpclient, errorfileobj, currentregion):
         return classicpipelines
     except botocore.exceptions.ClientError as error:
         errorfileobj.write('classicdatapipelines() in ' + currentregion + ' returned: ' + str(error))
-        return('UNKNOWN', )
+        return ('UNKNOWN',)
     except botocore.exceptions.ParamValidationError as error:
         errorfileobj.write('classicdatapipelines() in ' + currentregion + ' returned: ' + str(error))
         return ('UNKNOWN',)
@@ -610,6 +609,7 @@ def loopregions(classicregionslist, datapipelineregionslist, creds):
 
     if 'secretkey' not in creds.keys() and 'sessiontoken' not in creds.keys() and 'accesskey' not in creds.keys() and \
             'profile' not in creds.keys():
+        # Default invocation detected
         session = boto3.session.Session()
         sts = session.client('sts')
         accountid = sts.get_caller_identity()
@@ -618,9 +618,9 @@ def loopregions(classicregionslist, datapipelineregionslist, creds):
             os.mkdir(accountid['Account'])
         processes = []
         for regionname in classicregionslist:
-            process = Process(target=getclassicresources, args=(executionprefix, regionname,
+            processobj = Process(target=getclassicresources, args=(executionprefix, regionname,
                                                                 datapipelineregionslist, {}))
-            processes.append(process)
+            processes.append(processobj)
         for process in processes:
             process.start()
         for process in processes:
@@ -628,6 +628,7 @@ def loopregions(classicregionslist, datapipelineregionslist, creds):
         concatenateregions(classicregionslist, datapipelineregionslist, executionprefix)
         return True
     elif 'secretkey' in creds.keys() and 'sessiontoken' in creds.keys() and 'accesskey' in creds.keys():
+        # Organizational invocation detected
         session = boto3.session.Session(
             aws_access_key_id=creds['accesskey'],
             aws_secret_access_key=creds['secretkey'],
@@ -644,13 +645,14 @@ def loopregions(classicregionslist, datapipelineregionslist, creds):
                                                                 datapipelineregionslist,
                                                                 creds))
             processes.append(process)
-            for process in processes:
-                process.start()
-            for process in processes:
-                process.join()
+        for process in processes:
+            process.start()
+        for process in processes:
+            process.join()
         concatenateregions(classicregionslist, datapipelineregionslist, executionprefix)
         return True
     elif 'profile' in creds.keys():
+        # Profile invocation detected
         session = boto3.session.Session(
             profile_name=creds['profile']
         )
@@ -664,10 +666,10 @@ def loopregions(classicregionslist, datapipelineregionslist, creds):
             process = Process(target=getclassicresources, args=(executionprefix, regionname,
                                                                 datapipelineregionslist, creds))
             processes.append(process)
-            for process in processes:
-                process.start()
-            for process in processes:
-                process.join()
+        for process in processes:
+            process.start()
+        for process in processes:
+            process.join()
         concatenateregions(classicregionslist, datapipelineregionslist, executionprefix)
         return True
     else:
@@ -788,8 +790,10 @@ def main(argresult):
     creddict = {}
 
     if str(argresult) == 'default':
+        print("Default invocation detected. Running against local account. \n")
         loopregions(classicregions, datapipelineregions, {})
     elif type(argresult) is dict:
+        print("Organization wide invocation detected. Running against all accounts in the organization. \n")
         orgclient = boto3.client('organizations')
         stsparentclient = boto3.client('sts')
         paginator = orgclient.get_paginator('list_accounts')
@@ -819,7 +823,7 @@ def main(argresult):
                     creddict['sessiontoken'] = accountstscred['Credentials']['SessionToken']
                     loopregions(classicregions, datapipelineregions, creddict)
                 except Exception as e:
-                    print('Error running for account '+str(account)+'. The error was: '+str(e))
+                    print('Error running for account ' + str(account) + '. The error was: ' + str(e))
         else:
             for account in accountslist:
                 try:
@@ -834,11 +838,15 @@ def main(argresult):
                     creddict['sessiontoken'] = accountstscred['Credentials']['SessionToken']
                     loopregions(classicregions, datapipelineregions, creddict)
                 except Exception as e:
-                    print('Error running for account '+str(account)+'. The error was: '+str(e))
+                    print('Error running for account ' + str(account) + '. The error was: ' + str(e))
     else:
+        print("Profile invocation detected. Running against all listed profiles. \n")
         for profile in argresult:
-            creddict['profile'] = profile
-            loopregions(classicregions, datapipelineregions, creddict)
+            try:
+                creddict['profile'] = profile
+                loopregions(classicregions, datapipelineregions, creddict)
+            except Exception as e:
+                print('Error running for profile ' + str(profile) + '. The error was: ' + str(e))
 
 
 # Execute the main function
