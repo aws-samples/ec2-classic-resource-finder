@@ -96,7 +96,7 @@ def filewriter(prefixobj, efileobj, inputlist, currentregionnameobj, suffixobj):
         for line in inputlist:
             writefile.write(currentregionnameobj + ', ' + line + '\n')
     except Exception as e:
-        efileobj.write(suffixobj + ' for ' + currentregionnameobj + ' failed to write. Error: ' + str(e))
+        efileobj.write(suffixobj + ' for ' + currentregionnameobj + ' failed to write. Error: ' + str(e) + '\n')
     finally:
         writefile.close()
 
@@ -120,13 +120,13 @@ def classicplatformstatus(ec2client, errorfileobj, currentregion):
         else:
             return 'Disabled'
     except botocore.exceptions.ClientError as error:
-        errorfileobj.write('describe_account_attributes in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_account_attributes in ' + currentregion + ' returned: ' + str(error) + '\n')
         return 'UNKNOWN'
     except botocore.exceptions.ParamValidationError as error:
-        errorfileobj.write('describe_account_attributes in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_account_attributes in ' + currentregion + ' returned: ' + str(error) + '\n')
         return 'UNKNOWN'
     except Exception as error:
-        errorfileobj.write('describe_account_attributes in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_account_attributes in ' + currentregion + ' returned: ' + str(error) + '\n')
         return 'UNKNOWN'
 
 
@@ -150,13 +150,13 @@ def classiceips(ec2client, errorfileobj, currentregion):
             eiplist.append(address['PublicIp'])
         return eiplist
     except botocore.exceptions.ClientError as error:
-        errorfileobj.write('describe_addresses in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_addresses in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
     except botocore.exceptions.ParamValidationError as error:
-        errorfileobj.write('describe_addresses in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_addresses in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
     except Exception as error:
-        errorfileobj.write('describe_addresses in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_addresses in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
 
 
@@ -177,13 +177,13 @@ def classicec2instances(ec2client, errorfileobj, currentregion):
                         classicinstances.append(instance['InstanceId'])
         return classicinstances
     except botocore.exceptions.ClientError as error:
-        errorfileobj.write('describe_instances in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_instances in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
     except botocore.exceptions.ParamValidationError as error:
-        errorfileobj.write('describe_instances in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_instances in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
     except Exception as error:
-        errorfileobj.write('describe_instances in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_instances in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
 
 
@@ -201,13 +201,13 @@ def classicsecuritygroups(ec2client, errorfileobj, currentregion):
                     classicsgs.append(sgdata['GroupId'])
         return classicsgs
     except botocore.exceptions.ClientError as error:
-        errorfileobj.write('describe_security_groups in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_security_groups in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
     except botocore.exceptions.ParamValidationError as error:
-        errorfileobj.write('describe_security_groups in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_security_groups in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
     except Exception as error:
-        errorfileobj.write('describe_security_groups in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_security_groups in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
 
 
@@ -231,13 +231,13 @@ def classiclinks(ec2client, errorfileobj, currentregion):
             classiclinkvpcslist.append(vpccl['VpcId'])
         return classiclinkvpcslist
     except botocore.exceptions.ClientError as error:
-        errorfileobj.write('describe_vpc_classic_link in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_vpc_classic_link in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
     except botocore.exceptions.ParamValidationError as error:
-        errorfileobj.write('describe_vpc_classic_link in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_vpc_classic_link in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
     except Exception as error:
-        errorfileobj.write('describe_vpc_classic_link in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_vpc_classic_link in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
 
 
@@ -255,13 +255,13 @@ def classicasgs(asgclient, errorfileobj, currentregion):
                     classicasglist.append(asgdata['AutoScalingGroupARN'])
         return classicasglist
     except botocore.exceptions.ClientError as error:
-        errorfileobj.write('describe_auto_scaling_groups in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_auto_scaling_groups in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
     except botocore.exceptions.ParamValidationError as error:
-        errorfileobj.write('describe_auto_scaling_groups in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_auto_scaling_groups in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
     except Exception as error:
-        errorfileobj.write('describe_auto_scaling_groups in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_auto_scaling_groups in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
 
 
@@ -279,13 +279,13 @@ def classicclbs(elbclient, errorfileobj, currentregion):
                     classicclblist.append(clbdata['LoadBalancerName'])
         return classicclblist
     except botocore.exceptions.ClientError as error:
-        errorfileobj.write('describe_load_balancers in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_load_balancers in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
     except botocore.exceptions.ParamValidationError as error:
-        errorfileobj.write('describe_load_balancers in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_load_balancers in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
     except Exception as error:
-        errorfileobj.write('describe_load_balancers in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_load_balancers in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
 
 
@@ -303,13 +303,13 @@ def classicrds(rdsclient, errorfileobj, currentregion):
                     classicrdsinstances.append(instance['DBInstanceArn'])
         return classicrdsinstances
     except botocore.exceptions.ClientError as error:
-        errorfileobj.write('describe_db_instances in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_db_instances in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
     except botocore.exceptions.ParamValidationError as error:
-        errorfileobj.write('describe_db_instances in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_db_instances in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
     except Exception as error:
-        errorfileobj.write('describe_db_instances in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_db_instances in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
 
 
@@ -327,13 +327,13 @@ def classicelasticache(ecclient, errorfileobj, currentregion):
                     classicecclusters.append(cluster['ARN'])
         return classicecclusters
     except botocore.exceptions.ClientError as error:
-        errorfileobj.write('describe_cache_clusters in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_cache_clusters in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
     except botocore.exceptions.ParamValidationError as error:
-        errorfileobj.write('describe_cache_clusters in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_cache_clusters in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
     except Exception as error:
-        errorfileobj.write('describe_cache_clusters in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_cache_clusters in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
 
 
@@ -351,13 +351,13 @@ def classicredshift(rsclient, errorfileobj, currentregion):
                     classicrsclusters.append(cluster['ClusterIdentifier'])
         return classicrsclusters
     except botocore.exceptions.ClientError as error:
-        errorfileobj.write('describe_clusters in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_clusters in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
     except botocore.exceptions.ParamValidationError as error:
-        errorfileobj.write('describe_clusters in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_clusters in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
     except Exception as error:
-        errorfileobj.write('describe_clusters in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_clusters in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
 
 
@@ -386,13 +386,13 @@ def classicbeanstalk(ebclient, errorfileobj, currentregion):
                     ebclusters.append(str(environment['ApplicationName'] + ', ' + environment['EnvironmentName']))
         return ebclusters
     except botocore.exceptions.ClientError as error:
-        errorfileobj.write('classicbeanstalk() in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('classicbeanstalk() in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
     except botocore.exceptions.ParamValidationError as error:
-        errorfileobj.write('classicbeanstalk() in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('classicbeanstalk() in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
     except Exception as error:
-        errorfileobj.write('classicbeanstalk() in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('classicbeanstalk() in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
 
 
@@ -423,13 +423,13 @@ def classicdatapipelines(dpclient, errorfileobj, currentregion):
                     classicpipelines.append(pipeline['id'])
         return classicpipelines
     except botocore.exceptions.ClientError as error:
-        errorfileobj.write('classicdatapipelines() in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('classicdatapipelines() in ' + currentregion + ' returned: ' + str(error + '\n'))
         return ('UNKNOWN',)
     except botocore.exceptions.ParamValidationError as error:
-        errorfileobj.write('classicdatapipelines() in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('classicdatapipelines() in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
     except Exception as error:
-        errorfileobj.write('classicdatapipelines() in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('classicdatapipelines() in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
 
 
@@ -452,13 +452,13 @@ def classicemr(emrclient, errorfileobj, currentregion):
                     emrclusters.append(cluster['Id'])
         return emrclusters
     except botocore.exceptions.ClientError as error:
-        errorfileobj.write('classicemr() in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('classicemr() in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
     except botocore.exceptions.ParamValidationError as error:
-        errorfileobj.write('classicemr() in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('classicemr() in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
     except Exception as error:
-        errorfileobj.write('classicemr() in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('classicemr() in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
 
 
@@ -474,13 +474,13 @@ def classicopswork(owclient, errorfileobj, currentregion):
                 classicstacks.append(stack['StackId'])
         return classicstacks
     except botocore.exceptions.ClientError as error:
-        errorfileobj.write('describe_stacks in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_stacks in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
     except botocore.exceptions.ParamValidationError as error:
-        errorfileobj.write('describe_stacks in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_stacks in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
     except Exception as error:
-        errorfileobj.write('describe_stacks in ' + currentregion + ' returned: ' + str(error))
+        errorfileobj.write('describe_stacks in ' + currentregion + ' returned: ' + str(error) + '\n')
         return ('UNKNOWN',)
 
 
@@ -536,7 +536,7 @@ def getclassicresources(prefix, region, datapipelineregionlist, creds):
     try:
         platformfile.write(region + ', ' + classicplatformstatus(ec2obj, errorfile, region) + '\n')
     except Exception as e:
-        errorfile.write('Platform Status for ' + region + ' failed to write. Error: ' + str(e))
+        errorfile.write('Platform Status for ' + region + ' failed to write. Error: ' + str(e) + '\n')
     finally:
         platformfile.close()
 
@@ -823,7 +823,7 @@ def main(argresult):
                     creddict['sessiontoken'] = accountstscred['Credentials']['SessionToken']
                     loopregions(classicregions, datapipelineregions, creddict)
                 except Exception as e:
-                    print('Error running for account ' + str(account) + '. The error was: ' + str(e))
+                    print('Error running for account ' + str(account) + '. The error was: ' + str(e) + '\n')
         else:
             for account in accountslist:
                 try:
@@ -838,7 +838,7 @@ def main(argresult):
                     creddict['sessiontoken'] = accountstscred['Credentials']['SessionToken']
                     loopregions(classicregions, datapipelineregions, creddict)
                 except Exception as e:
-                    print('Error running for account ' + str(account) + '. The error was: ' + str(e))
+                    print('Error running for account ' + str(account) + '. The error was: ' + str(e) + '\n')
     else:
         print("Profile invocation detected. Running against all listed profiles. \n")
         for profile in argresult:
@@ -846,7 +846,7 @@ def main(argresult):
                 creddict['profile'] = profile
                 loopregions(classicregions, datapipelineregions, creddict)
             except Exception as e:
-                print('Error running for profile ' + str(profile) + '. The error was: ' + str(e))
+                print('Error running for profile ' + str(profile) + '. The error was: ' + str(e) + '\n')
 
 
 # Execute the main function
